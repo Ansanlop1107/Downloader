@@ -21,21 +21,68 @@ Incluye barra de progreso visual en tiempo real, selección de calidad, extracci
 
 - Python 3.8 o superior
 - [`yt-dlp`](https://pypi.org/project/yt-dlp/)
-- [`ffmpeg`](https://ffmpeg.org/download.html) (necesario para unir video+audio en MP4 y para extraer MP3)
+- [`ffmpeg`](https://ffmpeg.org/download.html) (**necesario** para unir video+audio en MP4 y para extraer MP3 — sin él, la descarga falla en cuanto yt-dlp necesita combinar streams separados)
 
-### Instalación de dependencias
+### 🔧 Instalación de dependencias
+
+**1. Clona o descarga el proyecto**, y sitúate en su carpeta:
+
+```bash
+cd Downloader
+```
+
+**2. Instala las dependencias de Python.**
+
+Con el archivo `requirements.txt` incluido en el proyecto:
+
+```bash
+pip install -r requirements.txt
+```
+
+O manualmente, instalando solo `yt-dlp`:
 
 ```bash
 pip install yt-dlp
 ```
 
+> 💡 Se recomienda usar un entorno virtual para no mezclar dependencias con otros proyectos:
+> ```bash
+> python -m venv venv
+> venv\Scripts\activate      # Windows
+> source venv/bin/activate   # macOS / Linux
+> pip install -r requirements.txt
+> ```
+
+**3. Instala ffmpeg** (obligatorio, ver tabla abajo).
+
+**4. Verifica que todo está listo:**
+
+```bash
+python -c "import yt_dlp; print('yt-dlp OK')"
+ffmpeg -version
+```
+
+Si ambos comandos responden sin error, ya puedes usar el script.
+
 **ffmpeg:**
 
 | Sistema | Instalación |
 |---|---|
-| Windows | Descarga desde [ffmpeg.org](https://ffmpeg.org/download.html) y añade la carpeta `bin` al PATH, o instala con `winget install ffmpeg` |
+| Windows | `winget install ffmpeg` (recomendado), o descarga desde [ffmpeg.org](https://ffmpeg.org/download.html) y añade la carpeta `bin` al PATH |
 | macOS | `brew install ffmpeg` |
 | Linux (Debian/Ubuntu) | `sudo apt install ffmpeg` |
+
+> ⚠️ Tras instalar con `winget`, cierra y vuelve a abrir la terminal para que reconozca el PATH actualizado.
+
+### (Opcional) Runtime de JavaScript para YouTube
+
+yt-dlp puede mostrar esta advertencia al descargar de YouTube:
+
+```
+WARNING: [youtube] No supported JavaScript runtime could be found...
+```
+
+No detiene la descarga, pero sin un runtime de JS (como [`deno`](https://deno.com/)) yt-dlp puede no obtener todos los formatos disponibles. Es opcional instalarlo; si quieres eliminar la advertencia y tener acceso a todos los formatos, instala `deno` y sigue las instrucciones del [wiki de yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
 
 ---
 
@@ -104,6 +151,12 @@ python descargar_video.py "https://ejemplo.com/video" --calidad 720
 
 **`ModuleNotFoundError: No module named 'yt_dlp'`**
 Falta instalar la librería: `pip install yt-dlp`
+
+**`ERROR: You have requested merging of multiple formats but ffmpeg is not installed`**
+Necesitas `ffmpeg` instalado y en el PATH para que yt-dlp pueda unir el video y el audio (esto ocurre en casi cualquier descarga en calidad alta de YouTube, ya que video y audio vienen en streams separados). Instálalo con `winget install ffmpeg` (Windows), `brew install ffmpeg` (macOS) o `sudo apt install ffmpeg` (Linux), y reinicia la terminal.
+
+**`WARNING: [youtube] No supported JavaScript runtime could be found`**
+Es solo una advertencia, no detiene la descarga. yt-dlp avisa que sin un runtime de JS (ej. `deno`) podría no obtener todos los formatos disponibles de YouTube. Instalar `deno` es opcional — ver el [wiki de yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
 
 **`error: the following arguments are required: url`**
 Olvidaste pasar la URL del video. Debe ir entre comillas como primer argumento:

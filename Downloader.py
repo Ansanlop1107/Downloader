@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Downloader.py - Script para descargar videos con yt-dlp
 
@@ -26,8 +25,8 @@ Ejemplos:
 """
 
 import argparse
-import sys
 import shutil
+import sys
 
 try:
     import yt_dlp
@@ -36,12 +35,29 @@ except ImportError:
     sys.exit(1)
 
 
+class Estilo:
+    """"Clase para estilos de texto en la terminal usando códigos ANSI."""
+    RESET = "\033[0m"
+    NEGRITA = "\033[1m"
+    CIAN = "\033[36m"
+    VERDE = "\033[32m"
+    AMARILLO = "\033[33m"
+    ROJO = "\033[31m"
+    GRIS = "\033[90m"
+
+
+def _ancho_barra():
+    """Calcula un ancho de barra razonable según el ancho del terminal."""
+    columnas = shutil.get_terminal_size(fallback=(80, 20)).columns
+    return max(20, min(30, columnas - 55))
+
+
 def construir_opciones(args):
     opciones = {
         "outtmpl": f"{args.salida}/%(title)s.%(ext)s",
         "noplaylist": not args.playlist,
-        "quiet": False,
-        "no_warnings": False,
+        "quiet": True,
+        "no_warnings": True,
         "progress_hooks": [mostrar_progreso],
     }
 
@@ -68,11 +84,26 @@ def construir_opciones(args):
 
 def mostrar_progreso(d):
     if d["status"] == "downloading":
-        porcentaje = d.get("_percent_str", "").strip()
-        velocidad = d.get("_speed_str", "").strip()
-        print(f"\rDescargando... {porcentaje} a {velocidad}", end="", flush=True)
+        total = d.get("total_bytes") or d.get("total_bytes_estimate")
+        descargado = d.get("downloaded_bytes", 0)
+        porcentaje = (descargado / total * 100) if total else 0.0
+
+        ancho = _ancho_barra()
+        llenado = int(ancho * porcentaje / 100)
+        barra = "█" * llenado + "░" * (ancho - llenado)
+
+        velocidad = (d.get("_speed_str") or "?").strip()
+        eta = (d.get("_eta_str") or "?").strip()
+
+        linea = (
+            f"\r⬇️  [{Estilo.CIAN}{barra}{Estilo.RESET}] "
+            f"{porcentaje:5.1f}% 🚀 {velocidad:>10} ⏳ ETA {eta:>6}   "
+        )
+        print(linea, end="", flush=True)
+
     elif d["status"] == "finished":
-        print("\nDescarga completada, procesando archivo...")
+        print(f"\n{Estilo.AMARILLO}⚙️  Descarga completa, procesando archivo "
+              f"(uniendo/convirtiendo)...{Estilo.RESET}")
 
 
 def main():
@@ -100,12 +131,17 @@ def main():
     args = parser.parse_args()
     opciones = construir_opciones(args)
 
+    print(f"\n{Estilo.NEGRITA}{Estilo.CIAN}🎬 Iniciando descarga de:{Estilo.RESET} {args.url}\n")
+
     try:
         with yt_dlp.YoutubeDL(opciones) as ydl:
             ydl.download([args.url])
-        print("\n✅ Descarga finalizada con éxito.")
+        print(f"\n{Estilo.VERDE}{Estilo.NEGRITA}✅ ¡Descarga finalizada con éxito! 🎉{Estilo.RESET}\n")
     except yt_dlp.utils.DownloadError as e:
-        print(f"\n❌ Error al descargar: {e}")
+        print(f"\n{Estilo.ROJO}❌ Error al descargar:{Estilo.RESET} {e}\n")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print(f"\n{Estilo.AMARILLO}⚠️  Descarga cancelada por el usuario.{Estilo.RESET}\n")
         sys.exit(1)
 
 

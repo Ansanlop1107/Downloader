@@ -22,11 +22,23 @@ Ejemplos:
 
     # Limitar la calidad máxima (ej: 720p)
     python Downloader.py "URL" --calidad 720
+
+    # Forzar un cliente de YouTube (útil si aparece error 403 Forbidden)
+    python Downloader.py "URL" --cliente android
+
+    # No limpiar la terminal al iniciar
+    python Downloader.py "URL" --sin-limpiar
 """
 
 import argparse
+import os
 import shutil
 import sys
+import warnings
+
+# Silenciar warnings de librerías de terceros (requests/urllib3/chardet, etc.)
+warnings.filterwarnings("ignore")
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 try:
     import yt_dlp
@@ -36,7 +48,7 @@ except ImportError:
 
 
 class Estilo:
-    """"Clase para estilos de texto en la terminal usando códigos ANSI."""
+    """Clase para estilos de texto en la terminal usando códigos ANSI."""
     RESET = "\033[0m"
     NEGRITA = "\033[1m"
     CIAN = "\033[36m"
@@ -44,6 +56,34 @@ class Estilo:
     AMARILLO = "\033[33m"
     ROJO = "\033[31m"
     GRIS = "\033[90m"
+
+
+BANNER = r"""
+ ____   _____        ___   _ _     ___    _    ____  _____ ____
+|  _ \ / _ \ \      / / \ | | |   / _ \  / \  |  _ \| ____|  _ \
+| | | | | | \ \ /\ / /|  \| | |  | | | |/ _ \ | | | |  _| | |_) |
+| |_| | |_| |\ V  V / | |\  | |__| |_| / ___ \| |_| | |___|  _ <
+|____/ \___/  \_/\_/  |_| \_|_____\___/_/   \_\____/|_____|_| \_\
+"""
+
+
+def limpiar_terminal():
+    """Limpia la terminal en Windows, macOS o Linux."""
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def mostrar_banner():
+    ancho = max(68, shutil.get_terminal_size(fallback=(80, 20)).columns - 2)
+    ancho = min(ancho, 78)
+
+    subtitulo = "🎬 Descargador de videos"
+    firma = "Made with ♥️ by Ansanlop11"
+
+    print(f"{Estilo.CIAN}{Estilo.NEGRITA}\n{BANNER}\n{Estilo.RESET}")
+    print(f"{Estilo.GRIS}{'─' * ancho}{Estilo.RESET}")
+    print(f"{Estilo.AMARILLO}{Estilo.NEGRITA}{subtitulo.center(ancho)}{Estilo.RESET}")
+    print(f"{Estilo.VERDE}{Estilo.NEGRITA}{firma.center(ancho)}{Estilo.RESET}")
+    print(f"{Estilo.GRIS}{'─' * ancho}{Estilo.RESET}\n")
 
 
 def _ancho_barra():
@@ -78,6 +118,10 @@ def construir_opciones(args):
         else:
             opciones["format"] = "bestvideo+bestaudio/best"
         opciones["merge_output_format"] = "mp4"
+
+    # Si YouTube empieza a devolver 403, este cliente alternativo suele evitarlo.
+    if args.cliente:
+        opciones["extractor_args"] = {"youtube": {"player_client": [args.cliente]}}
 
     return opciones
 
@@ -127,11 +171,25 @@ def main():
         "--calidad", type=int, default=None,
         help="Altura máxima de video en píxeles (ej: 1080, 720, 480)"
     )
+    parser.add_argument(
+        "--cliente", type=str, default=None, choices=["android", "ios", "web", "tv"],
+        help="Forzar un cliente de YouTube específico (útil si aparece error 403)"
+    )
+    parser.add_argument(
+        "--sin-limpiar", action="store_true",
+        help="No limpiar la terminal al iniciar"
+    )
 
     args = parser.parse_args()
+
+    if not args.sin_limpiar:
+        limpiar_terminal()
+
+    mostrar_banner()
+
     opciones = construir_opciones(args)
 
-    print(f"\n{Estilo.NEGRITA}{Estilo.CIAN}🎬 Iniciando descarga de:{Estilo.RESET} {args.url}\n")
+    print(f"{Estilo.NEGRITA}{Estilo.CIAN}🎬 Iniciando descarga de:{Estilo.RESET} {args.url}\n")
 
     try:
         with yt_dlp.YoutubeDL(opciones) as ydl:

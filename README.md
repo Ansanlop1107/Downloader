@@ -89,7 +89,7 @@ No detiene la descarga, pero sin un runtime de JS (como [`deno`](https://deno.co
 ## 🚀 Uso
 
 ```bash
-python descargar_video.py "URL_DEL_VIDEO"
+python Downloader.py "URL_DEL_VIDEO"
 ```
 
 ### Opciones disponibles
@@ -101,6 +101,10 @@ python descargar_video.py "URL_DEL_VIDEO"
 | `--solo-audio` | Descarga solo el audio en formato MP3 |
 | `--playlist` | Descarga la playlist completa en vez de un solo video |
 | `--calidad` | Altura máxima del video en píxeles (ej: `1080`, `720`, `480`) |
+| `--cliente` | Cliente de YouTube específico: `android`, `ios`, `web`, `tv` |
+| `-c`, `--cookies` | Archivo `cookies.txt` para autenticación (videos privados, TikTok, YouTube +18) |
+| `-cb`, `--cookies-from-browser` | Extraer cookies del navegador (`firefox`, `edge`, `chrome`, etc.) |
+| `--sin-limpiar` | No limpiar la terminal al iniciar |
 | `-h`, `--help` | Muestra la ayuda |
 
 ---
@@ -109,27 +113,36 @@ python descargar_video.py "URL_DEL_VIDEO"
 
 **Descargar en la mejor calidad disponible:**
 ```bash
-python descargar_video.py "https://ejemplo.com/video"
+python Downloader.py "https://ejemplo.com/video"
 ```
 
 **Descargar solo el audio en MP3:**
 ```bash
-python descargar_video.py "https://ejemplo.com/video" --solo-audio
+python Downloader.py "https://ejemplo.com/video" --solo-audio
 ```
 
 **Elegir carpeta de salida:**
 ```bash
-python descargar_video.py "https://ejemplo.com/video" -o ~/Descargas
+python Downloader.py "https://ejemplo.com/video" -o ~/Descargas
 ```
 
 **Descargar una playlist completa:**
 ```bash
-python descargar_video.py "https://ejemplo.com/playlist" --playlist
+python Downloader.py "https://ejemplo.com/playlist" --playlist
 ```
 
 **Limitar la calidad máxima a 720p:**
 ```bash
-python descargar_video.py "https://ejemplo.com/video" --calidad 720
+python Downloader.py "https://ejemplo.com/video" --calidad 720
+```
+
+**Descargar videos privados o que requieren login (TikTok, YouTube +18, etc.):**
+```bash
+# Método recomendado (100% fiable): usando archivo cookies.txt
+python Downloader.py "https://www.tiktok.com/@usuario/video/..." --cookies cookies.txt
+
+# O extrayendo cookies de un navegador compatible (ej: firefox):
+python Downloader.py "https://www.tiktok.com/@usuario/video/..." --cookies-from-browser firefox
 ```
 
 ---
@@ -149,19 +162,34 @@ python descargar_video.py "https://ejemplo.com/video" --calidad 720
 
 ## 🛠️ Solución de problemas
 
+**`ERROR: [TikTok] ... You do not have permission to view this post`**
+Este error ocurre cuando el video de TikTok es privado, de una cuenta privada, para amigos, o cuando TikTok bloquea peticiones anónimas requiriendo autenticación:
+1. Instala una extensión para exportar cookies en formato Netscape, por ejemplo:
+   - [Get cookies.txt LOCALLY (Chrome/Edge/Brave)](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+   - [Cookie-Editor](https://cookie-editor.com/)
+2. Abre TikTok en tu navegador e inicia sesión con una cuenta que tenga acceso al video.
+3. Abre la extensión, exporta las cookies y guarda el archivo como `cookies.txt` en la misma carpeta del script.
+4. Ejecuta:
+   ```bash
+   python Downloader.py "URL_DEL_TIKTOK" --cookies cookies.txt
+   ```
+
+**`ERROR: Failed to decrypt with DPAPI (issue #10927)`**
+En Windows, las versiones recientes de Google Chrome y Microsoft Edge protegen sus cookies con una clave de sistema (*App-Bound Encryption*) que impide a programas externos leerlas directamente. Para solucionarlo, usa la opción `--cookies cookies.txt` explicada arriba (o usa Firefox con `--cookies-from-browser firefox`).
+
 **`ModuleNotFoundError: No module named 'yt_dlp'`**
 Falta instalar la librería: `pip install yt-dlp`
 
 **`ERROR: You have requested merging of multiple formats but ffmpeg is not installed`**
-Necesitas `ffmpeg` instalado y en el PATH para que yt-dlp pueda unir el video y el audio (esto ocurre en casi cualquier descarga en calidad alta de YouTube, ya que video y audio vienen en streams separados). Instálalo con `winget install ffmpeg` (Windows), `brew install ffmpeg` (macOS) o `sudo apt install ffmpeg` (Linux), y reinicia la terminal.
+Necesitas `ffmpeg` instalado y en el PATH para que yt-dlp pueda unir el video y el audio. Instálalo con `winget install ffmpeg` (Windows), `brew install ffmpeg` (macOS) o `sudo apt install ffmpeg` (Linux), y reinicia la terminal.
 
 **`WARNING: [youtube] No supported JavaScript runtime could be found`**
-Es solo una advertencia, no detiene la descarga. yt-dlp avisa que sin un runtime de JS (ej. `deno`) podría no obtener todos los formatos disponibles de YouTube. Instalar `deno` es opcional — ver el [wiki de yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/EJS).
+Es solo una advertencia, no detiene la descarga. yt-dlp avisa que sin un runtime de JS (ej. `deno`) podría no obtener todos los formatos disponibles de YouTube. Instalar `deno` es opcional.
 
 **`error: the following arguments are required: url`**
-Olvidaste pasar la URL del video. Debe ir entre comillas como primer argumento:
+Olvidaste pasar la URL del video. Debe ir entre comillas como argumento:
 ```bash
-python descargar_video.py "https://ejemplo.com/video"
+python Downloader.py "https://ejemplo.com/video"
 ```
 
 **`RequestsDependencyWarning`**
